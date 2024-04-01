@@ -1,0 +1,39 @@
+version: '2.3'
+
+services:
+  base-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+  controller-worker:
+    extends:
+      service: base-worker
+    ports:
+      - 5000:5000
+    command: >
+      python3 -m fastchat.serve.controller
+
+  model-worker:
+    extends:
+      service: base-worker
+    volumes:
+      - ./huggingface:/root/.cache/huggingface
+    ports:
+      - 5001:5001
+    command: >
+      python3 -m fastchat.serve.model_worker
+      --conv-template "vicuna_v1.1"
+      --model-path "kimnt93/chatmodel-exp-01"
+      --model-names "gpt-3.5-turbo"
+
+  embedding-worker:
+    extends:
+      service: worker
+    volumes:
+      - ./huggingface:/root/.cache/huggingface
+    ports:
+      - 5002:5002
+    command: >
+      python3 embedding_worker.py
+      --model-path "intfloat/multilingual-e5-large"
+      --model-names "text-embedding-ada-002"
